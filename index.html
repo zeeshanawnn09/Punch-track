@@ -1,0 +1,2232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PunchTrack — Employee Time System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --cream: #ede7d5;
+    --accent: #c8390a;
+    --accent2: #2a6b3f;
+    --muted: #7a7060;
+    --card: #ffffff;
+    --border: #d4cbba;
+    --shadow: rgba(13,13,13,0.08);
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1.5px solid var(--border);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  }
+  .nav-tab {
+    padding: 7px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-tab.active { background: var(--ink); color: var(--paper); }
+  .nav-tab:hover:not(.active) { background: var(--border); color: var(--ink); }
+  .nav-tab.hidden { display: none; }
+
+  .user-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 40px;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .page-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 2.2rem;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    font-size: 0.73rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+
+  /* CLOCK SECTION */
+  .clock-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 36px;
+  }
+
+  .clock-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 16px var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .live-clock {
+    font-family: 'Fraunces', serif;
+    font-size: 3.6rem;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .live-date {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1.5px solid;
+  }
+  .status-badge.out { border-color: var(--border); color: var(--muted); }
+  .status-badge.in { border-color: var(--accent2); color: var(--accent2); }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .status-badge.in .status-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .punch-btn {
+    width: 100%;
+    padding: 17px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .punch-btn.clock-in { background: var(--accent2); color: white; }
+  .punch-btn.clock-out { background: var(--accent); color: white; }
+  .punch-btn.break-btn { background: #b45309; color: white; }
+  .punch-btn.back-btn { background: #0369a1; color: white; }
+  .punch-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  .punch-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .punch-info { font-size: 0.7rem; color: var(--muted); }
+  .punch-info span { color: var(--ink); font-weight: 500; }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 8px var(--shadow);
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .stat-val {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+  .stat-unit { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); margin-left: 4px; }
+
+  /* TABLE */
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .export-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .export-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 8px var(--shadow);
+  }
+  thead { background: var(--cream); }
+  th {
+    padding: 12px 20px;
+    text-align: left;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1.5px solid var(--border);
+  }
+  td {
+    padding: 14px 20px;
+    font-size: 0.76rem;
+    border-bottom: 1px solid var(--cream);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(200,57,10,0.02); }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .tag.in { background: rgba(42,107,63,0.1); color: var(--accent2); }
+  .tag.out { background: rgba(200,57,10,0.1); color: var(--accent); }
+  .tag.complete { background: rgba(13,13,13,0.07); color: var(--muted); }
+
+  /* ADMIN */
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .admin-stat {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 8px var(--shadow);
+  }
+  .admin-stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 2.4rem;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .admin-stat-num.green { color: var(--accent2); }
+  .admin-stat-num.red { color: var(--accent); }
+  .admin-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+
+  .employee-row { display: flex; align-items: center; gap: 14px; }
+  .emp-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--paper); flex-shrink: 0;
+  }
+  .emp-name { font-weight: 500; font-size: 0.78rem; }
+  .emp-role { font-size: 0.65rem; color: var(--muted); }
+
+  /* LOGIN */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500;
+  }
+  .login-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 400px;
+    box-shadow: 0 4px 32px var(--shadow);
+  }
+  .login-logo { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 900; margin-bottom: 4px; }
+  .login-logo span { color: var(--accent); }
+  .login-sub { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 32px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .field input {
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--ink); }
+
+  .login-btn {
+    width: 100%; padding: 14px;
+    background: var(--ink); color: var(--paper);
+    border: none; border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; margin-top: 8px;
+    transition: opacity 0.15s;
+  }
+  .login-btn:hover { opacity: 0.85; }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .login-error {
+    font-size: 0.72rem; color: var(--accent);
+    margin-top: 10px; text-align: center;
+    min-height: 20px;
+  }
+
+  /* LOGOUT BTN */
+  .logout-btn {
+    padding: 6px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .logout-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(245,240,232,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 400;
+    font-size: 0.8rem; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    display: none;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 30px; right: 30px;
+    background: var(--ink); color: var(--paper);
+    padding: 14px 20px; border-radius: 12px;
+    font-size: 0.75rem;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    z-index: 999;
+    opacity: 0; transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+    max-width: 340px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* PROGRESS BAR */
+  .progress-track {
+    width: 100%; background: var(--cream);
+    border-radius: 8px; height: 6px; margin-top: 4px;
+  }
+  #progress-bar {
+    height: 100%; width: 0%;
+    background: var(--accent2);
+    border-radius: 8px;
+    transition: width 1s linear;
+  }
+
+  /* SESSION DISPLAY */
+  .session-meta {
+    display: flex; gap: 16px; width: 100%; margin-top: 4px;
+  }
+  .session-meta-item { flex: 1; text-align: center; }
+
+  /* ADMIN SUB TABS */
+  .admin-sub-tabs {
+    display: flex; gap: 4px;
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 4px;
+    margin-bottom: 32px; width: fit-content;
+  }
+  .admin-sub-tab {
+    padding: 7px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem; font-weight: 500;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border: none; background: transparent;
+    color: var(--muted); border-radius: 5px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .admin-sub-tab.active { background: var(--ink); color: var(--paper); }
+  .admin-sub-tab:hover:not(.active) { background: var(--border); color: var(--ink); }
+  .admin-tab-content { display: none; }
+  .admin-tab-content.active { display: block; }
+  .edit-btn {
+    padding: 5px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.05em;
+    text-transform: uppercase; background: transparent;
+    border: 1.5px solid var(--border); border-radius: 6px;
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .edit-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .invoice-btn {
+    padding: 5px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.05em;
+    text-transform: uppercase; background: var(--ink);
+    border: none; border-radius: 6px;
+    color: var(--paper); cursor: pointer; transition: all 0.15s;
+  }
+  .invoice-btn:hover { opacity: 0.8; }
+
+  /* PUNCH EDIT MODAL */
+  .punch-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(13,13,13,0.55);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .punch-modal-overlay.open { display: flex; }
+  .punch-modal {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 36px 38px;
+    width: 440px;
+    max-width: 96vw;
+    box-shadow: 0 10px 48px rgba(0,0,0,0.22);
+    border: 1.5px solid var(--border);
+  }
+  .punch-modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .punch-modal-sub {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .punch-modal .field { margin-bottom: 16px; }
+  .punch-modal .field label {
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .punch-modal .field input,
+  .punch-modal .field textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .punch-modal .field input:focus,
+  .punch-modal .field textarea:focus { border-color: var(--ink); }
+  .punch-modal .field textarea { resize: vertical; min-height: 72px; }
+  .punch-modal-note {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: rgba(200,57,10,0.05);
+    border: 1px solid rgba(200,57,10,0.15);
+    border-radius: 8px;
+  }
+  .punch-modal-actions { display: flex; gap: 10px; }
+  .punch-modal-actions button { flex: 1; }
+
+  /* DATE FILTER BAR */
+  .date-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .date-filter-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .date-filter-select {
+    padding: 9px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    min-width: 160px;
+  }
+  .date-filter-select:focus { border-color: var(--ink); }
+  .date-filter-input {
+    padding: 9px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .date-filter-input:focus { border-color: var(--ink); }
+  .date-filter-today-btn {
+    padding: 9px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .date-filter-today-btn:hover { opacity: 0.8; }
+  .date-filter-badge {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+  }
+  .date-filter-badge.today { color: var(--accent2); border-color: var(--accent2); background: rgba(42,107,63,0.06); }
+
+  @media (max-width: 700px) {
+    main { padding: 24px 18px; }
+    .clock-section { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .admin-grid { grid-template-columns: 1fr 1fr; }
+    header { padding: 14px 18px; }
+    .live-clock { font-size: 2.4rem; }
+    .login-card { width: 90%; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Punch<span>Track</span></div>
+    <div class="login-sub">Employee Time Management</div>
+    <div class="field">
+      <label>Email Address</label>
+      <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loading-overlay">Processing...</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Punch<span>Track</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-employee" onclick="switchView('employee', this)">My Dashboard</button>
+    <button class="nav-tab hidden" id="tab-admin" onclick="switchView('admin', this)">Admin Panel</button>
+  </div>
+  <div class="user-pill">
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    <span id="user-name-label"></span>
+    <div class="avatar" id="user-avatar">?</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- EMPLOYEE VIEW -->
+  <div class="view active" id="view-employee">
+    <div class="page-title" id="greet-title">Welcome back.</div>
+    <div class="page-sub" id="greet-sub">Loading...</div>
+
+    <div class="clock-section">
+      <div class="clock-card">
+        <div class="live-clock" id="live-clock">00:00:00</div>
+        <div class="live-date" id="live-date"></div>
+        <div class="status-badge out" id="status-badge">
+          <span class="status-dot"></span>
+          <span id="status-text">Clocked Out</span>
+        </div>
+        <button class="punch-btn clock-in" id="punch-btn" onclick="togglePunch()">↩ Clock In</button>
+        <button class="punch-btn break-btn" id="break-btn" onclick="toggleBreak()" style="display:none">☕ On Break</button>
+        <div class="punch-info" id="punch-info">Loading last punch...</div>
+      </div>
+
+      <div class="clock-card">
+        <div class="stat-label">Today's Session</div>
+        <div class="live-clock" id="session-timer" style="color:var(--accent2)">00:00:00</div>
+        <div class="live-date">Hours : Minutes : Seconds</div>
+        <div class="progress-track"><div id="progress-bar"></div></div>
+        <div class="punch-info">Target: <span>9h 00m</span> per day</div>
+        <div class="session-meta">
+          <div class="session-meta-item">
+            <div class="stat-label">Clock In</div>
+            <div style="font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem" id="ci-display">—</div>
+          </div>
+          <div class="session-meta-item">
+            <div class="stat-label">Clock Out</div>
+            <div style="font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem" id="co-display">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">This Week</div>
+        <div class="stat-val" id="stat-week">—<span class="stat-unit">hrs</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">This Month</div>
+        <div class="stat-val" id="stat-month">—<span class="stat-unit">hrs</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Days Logged</div>
+        <div class="stat-val" id="stat-days">—<span class="stat-unit">days</span></div>
+      </div>
+    </div>
+
+    <div class="table-header">
+      <div class="section-title">Punch History</div>
+      <button class="export-btn" onclick="exportMyCSV()">↓ Export CSV</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Clock In</th>
+          <th>Clock Out</th>
+          <th>Total Hours</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="history-tbody">
+        <tr><td colspan="5" class="empty-state">Loading records...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div class="view" id="view-admin">
+    <div class="page-title">Admin Overview</div>
+    <div class="page-sub" id="admin-sub">Live workforce status</div>
+
+    <!-- ADMIN SUB TABS -->
+    <div class="admin-sub-tabs">
+      <button class="admin-sub-tab active" onclick="switchAdminTab('overview', this)">Overview</button>
+      <button class="admin-sub-tab" onclick="switchAdminTab('employees', this)">Employees</button>
+      <button class="admin-sub-tab" onclick="switchAdminTab('payroll', this)">Payroll & Invoices</button>
+
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="admin-tab-content active" id="admin-tab-overview">
+
+    <!-- DATE FILTER BAR -->
+    <div class="date-filter-bar">
+      <span class="date-filter-label">View Date:</span>
+      <select class="date-filter-select" id="admin-date-preset" onchange="onAdminDatePresetChange(this.value)">
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="custom">Custom Date…</option>
+      </select>
+      <input type="date" class="date-filter-input" id="admin-date-custom"
+        style="display:none" onchange="onAdminCustomDateChange(this.value)">
+      <button class="date-filter-today-btn" onclick="goToAdminToday()">↩ Today</button>
+      <span class="date-filter-badge today" id="admin-date-badge">Today</span>
+    </div>
+
+    <div class="admin-grid">
+      <div class="admin-stat">
+        <div class="admin-stat-num green" id="admin-in-count">0</div>
+        <div class="admin-stat-label">Currently In</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-num red" id="admin-out-count">0</div>
+        <div class="admin-stat-label">Clocked Out</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-num" id="admin-total-count">0</div>
+        <div class="admin-stat-label">Total Employees</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-num" id="admin-hours-today">0</div>
+        <div class="admin-stat-label">Hours Logged Today</div>
+      </div>
+    </div>
+
+    <div class="table-header">
+      <div class="section-title">All Employees</div>
+      <button class="export-btn" onclick="exportAllCSV()">↓ Export All CSV</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Clock In</th>
+          <th>Clock Out</th>
+          <th>Hours Today</th>
+          <th>Status</th>
+          <th>Edit</th>
+        </tr>
+      </thead>
+      <tbody id="admin-tbody">
+        <tr><td colspan="5" class="empty-state">Loading employees...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- MONTHLY SUMMARY -->
+    <div class="table-header" style="margin-top:40px">
+      <div class="section-title">Monthly Summary — <span id="monthly-label"></span></div>
+      <button class="export-btn" onclick="exportMonthlyCSV()">↓ Export Monthly CSV</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Days Present</th>
+          <th>Total Hours</th>
+          <th>Avg / Day</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="monthly-tbody">
+        <tr><td colspan="5" class="empty-state">Loading monthly data...</td></tr>
+      </tbody>
+    </table>
+    </div><!-- end overview tab -->
+
+    <!-- EMPLOYEE MANAGEMENT TAB -->
+    <div class="admin-tab-content" id="admin-tab-employees">
+      <div class="table-header">
+        <div class="section-title">Employee Profiles</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Start Time</th>
+            <th>Working Days/Week</th>
+            <th>Req. Hours/Day</th>
+            <th>Monthly Salary (PKR)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="emp-mgmt-tbody">
+          <tr><td colspan="5" class="empty-state">Loading employee profiles...</td></tr>
+        </tbody>
+      </table>
+    </div><!-- end employees tab -->
+
+    <!-- PAYROLL TAB -->
+    <div class="admin-tab-content" id="admin-tab-payroll">
+      <div class="table-header">
+        <div class="section-title">Payroll &mdash; <span id="payroll-label"></span></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Days Present</th>
+            <th>Absent Days</th>
+            <th>Late Logins</th>
+            <th>Gross Salary</th>
+            <th>Deductions</th>
+            <th>Net Salary</th>
+            <th>Invoice</th>
+          </tr>
+        </thead>
+        <tbody id="payroll-tbody">
+          <tr><td colspan="8" class="empty-state">Loading payroll data...</td></tr>
+        </tbody>
+      </table>
+    </div><!-- end payroll tab -->
+
+
+
+  </div><!-- end view-admin -->
+
+  <!-- EMPLOYEE EDIT MODAL -->
+  <div id="emp-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,13,13,0.5);z-index:300;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border-radius:16px;padding:36px;width:420px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+      <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700;margin-bottom:20px" id="modal-title">Edit Employee</div>
+      <input type="hidden" id="modal-uid">
+      <div class="field"><label>Full Name</label><input type="text" id="modal-name" placeholder="e.g. Zeeshan Ahmed"></div>
+      <div class="field"><label>Scheduled Start Time</label><input type="time" id="modal-starttime"></div>
+      <div class="field"><label>Working Days per Week</label>
+        <select id="modal-workdays" style="padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Mono',monospace;font-size:0.8rem;background:var(--paper);color:var(--ink);">
+          <option value="6">6 Days/Week</option>
+          <option value="7">7 Days/Week</option>
+        </select>
+      </div>
+      <div class="field"><label>Required Hours per Day</label>
+        <select id="modal-hours" style="padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Mono',monospace;font-size:0.8rem;background:var(--paper);color:var(--ink);">
+          <option value="9">9 Hours</option>
+          <option value="10">10 Hours</option>
+        </select>
+      </div>
+      <div class="field"><label>Monthly Salary (PKR)</label><input type="number" id="modal-salary" placeholder="e.g. 50000"></div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="login-btn" style="flex:1" onclick="saveEmployeeProfile()">Save</button>
+        <button class="login-btn" style="flex:1;background:var(--cream);color:var(--ink)" onclick="closeEmployeeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUNCH EDIT MODAL -->
+  <div class="punch-modal-overlay" id="punch-edit-overlay">
+    <div class="punch-modal">
+      <div class="punch-modal-title">Edit Punch Record</div>
+      <div class="punch-modal-sub" id="punch-edit-employee-label">Employee Name</div>
+      <input type="hidden" id="punch-edit-doc-id">
+      <input type="hidden" id="punch-edit-date">
+      <div class="punch-modal-note">⚠️ Admin edits are logged. Changes will be immediately visible on the employee's dashboard.</div>
+      <div class="field">
+        <label>Clock In Time</label>
+        <input type="time" id="punch-edit-clockin">
+      </div>
+      <div class="field">
+        <label>Clock Out Time <span style="color:var(--muted);font-size:0.6rem">(leave blank if still active)</span></label>
+        <input type="time" id="punch-edit-clockout">
+      </div>
+      <div class="field">
+        <label>Reason / Note <span style="color:var(--accent);font-size:0.6rem">*required</span></label>
+        <textarea id="punch-edit-reason" placeholder="e.g. Forgot to clock out, corrected system error…"></textarea>
+      </div>
+      <div class="punch-modal-actions">
+        <button class="login-btn" onclick="savePunchEdit()">Save Changes</button>
+        <button class="login-btn" style="background:var(--cream);color:var(--ink)" onclick="closePunchEditModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">🔔</span>
+  <div id="toast-msg">Notification</div>
+</div>
+
+<!-- ===================== FIREBASE SDK ===================== -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, collection, doc, addDoc, updateDoc, getDocs, setDoc,
+    query, where, orderBy, limit, onSnapshot, Timestamp, getDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ============================================================
+  // 🔧 PASTE YOUR FIREBASE CONFIG HERE
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyA0_v4S87DNaXRwCEWP7e0NAqvQdsEFpuw",
+    authDomain: "clock-in-7755b.firebaseapp.com",
+    projectId: "clock-in-7755b",
+    storageBucket: "clock-in-7755b.firebasestorage.app",
+    messagingSenderId: "322010192122",
+    appId: "1:322010192122:web:161b6a84d9cb2e5b759143",
+    measurementId: "G-X7K8YRLW3H"
+  };
+  // ============================================================
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ——— PUSH NOTIFICATIONS (FCM) ———
+  let fcmMessaging = null;
+
+  async function initPushNotifications() {
+    try {
+      // Register service worker
+      if (!('serviceWorker' in navigator)) return;
+      const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+
+      // Dynamically load FCM
+      const { getMessaging, getToken, onMessage } = await import(
+        'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js'
+      );
+      fcmMessaging = getMessaging(app);
+
+      // Request permission
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.log('Notification permission denied');
+        return;
+      }
+
+      // Get FCM token — REPLACE vapidKey below with yours from Firebase Console
+      const token = await getToken(fcmMessaging, {
+        vapidKey: 'YOUR_VAPID_KEY_HERE',
+        serviceWorkerRegistration: reg
+      });
+
+      if (token && currentUser) {
+        // Save token to Firestore under fcmTokens collection
+        const tokenDocId = currentUser.uid + '_' + token.slice(-8);
+        await setDoc(doc(db, 'fcmTokens', tokenDocId), {
+          token,
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          updatedAt: Timestamp.now()
+        });
+        console.log('FCM token saved');
+      }
+
+      // Handle foreground notifications (app is open)
+      onMessage(fcmMessaging, (payload) => {
+        const { title, body } = payload.notification;
+        showToast(title.includes('In') ? '🟢' : '🔴', body);
+      });
+
+    } catch (e) {
+      console.warn('Push notification setup failed:', e);
+    }
+  }
+
+  // ——— STATE ———
+  let currentUser = null;
+  let currentUserData = null;
+  let clockedIn = false;
+  let onBreak = false;
+  let clockInTime = null;
+  let currentRecordId = null;
+  let sessionInterval = null;
+  let unsubscribeAdmin = null;
+  let myRecords = [];
+
+  // ——— LIVE CLOCK ———
+  function updateClock() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('live-clock').textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('live-date').textContent =
+      `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    document.getElementById('greet-sub').textContent =
+      `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    document.getElementById('admin-sub').textContent =
+      `Live workforce status · ${months[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ——— AUTH STATE ———
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      // Init push notifications after login
+      setTimeout(() => initPushNotifications(), 1500);
+      await loadUserData(user);
+      document.getElementById('login-screen').style.display = 'none';
+      initApp();
+    } else {
+      currentUser = null;
+      currentUserData = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      if (unsubscribeAdmin) unsubscribeAdmin();
+    }
+  });
+
+  // ——— LOAD USER DATA ———
+  async function loadUserData(user) {
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists()) {
+      currentUserData = userDoc.data();
+    } else {
+      // Default if no user doc exists
+      currentUserData = {
+        name: user.email.split('@')[0],
+        role: 'employee',
+        email: user.email
+      };
+    }
+    const name = currentUserData.name || user.email.split('@')[0];
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('user-name-label').textContent = name;
+    document.getElementById('user-avatar').textContent = initials;
+
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greet-title').textContent = `${greeting}, ${name.split(' ')[0]}.`;
+
+    // Show admin tab if admin
+    if (currentUserData.role === 'admin') {
+      document.getElementById('tab-admin').classList.remove('hidden');
+    }
+  }
+
+  // ——— INIT APP ———
+  function initApp() {
+    loadMyRecords(); // single source of truth — handles session restore + history
+    if (currentUserData.role === 'admin') {
+      subscribeAdminDashboard();
+    }
+  }
+
+  // ——— LOAD MY RECORDS (real-time) ———
+  // This is now the single source of truth for both history AND active session state.
+  // Eliminates the separate checkActiveSession to avoid race conditions on refresh.
+  let unsubscribeMyRecords = null;
+  let sessionRestored = false;
+  function loadMyRecords() {
+    try {
+      if (unsubscribeMyRecords) unsubscribeMyRecords();
+      sessionRestored = false;
+      const q = query(
+        collection(db, 'punches'),
+        where('userId', '==', currentUser.uid),
+        orderBy('clockIn', 'desc'),
+        limit(30)
+      );
+      unsubscribeMyRecords = onSnapshot(q, (snap) => {
+        myRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderHistoryTable(myRecords);
+        computeStats(myRecords);
+
+        // Find any open (active) punch record
+        const activeRecord = myRecords.find(r => !r.clockOut);
+
+        if (activeRecord) {
+          currentRecordId = activeRecord.id;
+          clockInTime = activeRecord.clockIn.toDate();
+          if (!clockedIn) {
+            // Restore clocked-in state (e.g. after refresh)
+            clockedIn = true;
+            setClockState(true);
+            startSessionTimer();
+          } else {
+            // Already clocked in — just refresh display (e.g. admin edited time)
+            document.getElementById('ci-display').textContent = fmtTime(clockInTime);
+          }
+        } else {
+          // No open record — user is clocked out
+          if (clockedIn) {
+            // Transition from in -> out (e.g. admin clocked them out remotely)
+            clearInterval(sessionInterval);
+            clockedIn = false;
+            clockInTime = null;
+            currentRecordId = null;
+            setClockState(false);
+          } else if (!sessionRestored) {
+            // First snapshot with no active session — show clocked-out state
+            setClockState(false);
+          }
+          // Show last clock-out time
+          if (myRecords.length > 0 && myRecords[0].clockOut) {
+            document.getElementById('punch-info').innerHTML =
+              `Last punch: <span>${fmtTime(myRecords[0].clockOut.toDate())}</span>`;
+            document.getElementById('co-display').textContent = fmtTime(myRecords[0].clockOut.toDate());
+          }
+        }
+
+        sessionRestored = true;
+      }, (e) => {
+        console.error('Snapshot error:', e);
+        showToast('⚠️', 'Could not load session data. Please refresh.');
+      });
+    } catch (e) {
+      console.error('Error loading records:', e);
+    }
+  }
+
+  // ——— SET CLOCK STATE ———
+  function setClockState(isIn) {
+    const btn = document.getElementById('punch-btn');
+    const badge = document.getElementById('status-badge');
+    const statusText = document.getElementById('status-text');
+    if (isIn) {
+      btn.textContent = '↪ Clock Out';
+      btn.className = 'punch-btn clock-out';
+      badge.className = 'status-badge in';
+      statusText.textContent = 'Clocked In';
+      document.getElementById('ci-display').textContent = fmtTime(clockInTime);
+      document.getElementById('co-display').textContent = '—';
+      document.getElementById('punch-info').innerHTML =
+        `Clocked in at: <span>${fmtTime(clockInTime)}</span>`;
+      document.getElementById('break-btn').style.display = '';
+    } else {
+      btn.textContent = '↩ Clock In';
+      btn.className = 'punch-btn clock-in';
+      badge.className = 'status-badge out';
+      statusText.textContent = 'Clocked Out';
+      document.getElementById('ci-display').textContent = '—';
+      document.getElementById('co-display').textContent = '—';
+      document.getElementById('session-timer').textContent = '00:00:00';
+      document.getElementById('progress-bar').style.width = '0%';
+      document.getElementById('break-btn').style.display = 'none';
+      onBreak = false;
+      if (myRecords.length > 0 && myRecords[0].clockOut) {
+        document.getElementById('punch-info').innerHTML =
+          `Last punch: <span>${fmtTime(myRecords[0].clockOut.toDate())}</span>`;
+      } else {
+        document.getElementById('punch-info').textContent = 'No recent punches';
+      }
+    }
+  }
+
+  // ——— IP RESTRICTION ———
+  // Allowed office IPs are hardcoded below. To add or remove IPs, edit this list directly.
+  const allowedIPs = ['72.255.58.129', '205.164.138.28', '139.135.34.111', '146.75.174.29', '37.203.151.156', '37.203.151.153', '58.65.223.10', '103.26.80.38', '37.203.151.157'];
+
+  async function getClientIP() {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    return data.ip;
+  }
+
+  async function checkOfficeIP() {
+    try {
+      const ip = await getClientIP();
+      if (!allowedIPs.includes(ip)) {
+        showToast('🚫', `Off-network access denied (${ip})`);
+        showLoading(false);
+        const btn = document.getElementById('punch-btn');
+        btn.disabled = false;
+        // Show a persistent warning banner
+        let banner = document.getElementById('ip-warning-banner');
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'ip-warning-banner';
+          banner.style.cssText = `
+            background: rgba(200,57,10,0.08);
+            border: 1.5px solid var(--accent);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          `;
+          banner.innerHTML = `<span style="font-size:1.1rem">🔒</span><span>Clock-in is restricted to office WiFi only. Please connect to the office network and try again.</span>`;
+          const clockCard = document.querySelector('.clock-card');
+          clockCard.parentElement.insertBefore(banner, clockCard.parentElement.firstChild);
+        }
+        return false;
+      }
+      // Remove warning banner if IP is valid
+      const banner = document.getElementById('ip-warning-banner');
+      if (banner) banner.remove();
+      return true;
+    } catch (e) {
+      showToast('⚠️', 'Could not verify network. Please check your connection.');
+      showLoading(false);
+      document.getElementById('punch-btn').disabled = false;
+      return false;
+    }
+  }
+
+  // ——— TOGGLE PUNCH ———
+  window.togglePunch = async function() {
+    const btn = document.getElementById('punch-btn');
+    btn.disabled = true;
+    showLoading(true);
+
+    // IP check
+    const isAllowed = await checkOfficeIP();
+    if (!isAllowed) return;
+
+    try {
+      if (!clockedIn) {
+        // CLOCK IN
+        const now = new Date();
+        const docRef = await addDoc(collection(db, 'punches'), {
+          userId: currentUser.uid,
+          userName: currentUserData.name || currentUser.email,
+          userEmail: currentUser.email,
+          clockIn: Timestamp.fromDate(now),
+          clockOut: null,
+          totalMinutes: null,
+          date: now.toISOString().split('T')[0]
+        });
+        currentRecordId = docRef.id;
+        clockInTime = now;
+        clockedIn = true;
+        setClockState(true);
+        startSessionTimer();
+        showToast('✅', `Clocked IN at ${fmtTime(now)}`);
+
+        // Trigger Slack notification via Cloud Function
+        notifySlack('in', currentUserData.name || currentUser.email, fmtTime(now), null);
+        notifyNtfy('in', currentUserData.name || currentUser.email, fmtTimePKT(now), null);
+
+      } else {
+        // CLOCK OUT
+        const now = new Date();
+        const diffMs = now - clockInTime;
+        const totalMinutes = Math.floor(diffMs / 60000);
+        const hrs = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+
+        await updateDoc(doc(db, 'punches', currentRecordId), {
+          clockOut: Timestamp.fromDate(now),
+          totalMinutes: totalMinutes
+        });
+
+        clearInterval(sessionInterval);
+        clockedIn = false;
+        clockInTime = null;
+        currentRecordId = null;
+        setClockState(false);
+        await loadMyRecords();
+        showToast('🔴', `Clocked OUT — ${hrs}h ${mins}m logged`);
+
+        // Trigger Slack notification
+        notifySlack('out', currentUserData.name || currentUser.email, fmtTime(now), `${hrs}h ${mins}m`);
+        notifyNtfy('out', currentUserData.name || currentUser.email, fmtTimePKT(now), `${hrs}h ${mins}m`);
+      }
+    } catch (e) {
+      showToast('⚠️', 'Something went wrong. Please try again.');
+      console.error(e);
+    }
+
+    btn.disabled = false;
+    showLoading(false);
+  };
+
+  // ——— TOGGLE BREAK ———
+  window.toggleBreak = function() {
+    const breakBtn = document.getElementById('break-btn');
+    const name = currentUserData.name || currentUser.email;
+    const time = fmtTimePKT(new Date());
+    if (!onBreak) {
+      onBreak = true;
+      breakBtn.textContent = '↩ Back from Break';
+      breakBtn.className = 'punch-btn back-btn';
+      notifyNtfy('break', name, time, null);
+      showToast('☕', `${name.split(' ')[0]} is on break`);
+    } else {
+      onBreak = false;
+      breakBtn.textContent = '☕ On Break';
+      breakBtn.className = 'punch-btn break-btn';
+      notifyNtfy('back', name, time, null);
+      showToast('✅', `${name.split(' ')[0]} is back from break`);
+    }
+  };
+
+  // ——— SESSION TIMER ———
+  function startSessionTimer() {
+    clearInterval(sessionInterval);
+    sessionInterval = setInterval(() => {
+      if (!clockInTime) return;
+      const diff = new Date() - clockInTime;
+      const totalSecs = Math.floor(diff / 1000);
+      const h = Math.floor(totalSecs / 3600);
+      const m = Math.floor((totalSecs % 3600) / 60);
+      const s = totalSecs % 60;
+      const pad = n => String(n).padStart(2,'0');
+      document.getElementById('session-timer').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+      const pct = Math.min((totalSecs / (9 * 3600)) * 100, 100);
+      document.getElementById('progress-bar').style.width = pct + '%';
+    }, 1000);
+  }
+
+  // ——— RENDER HISTORY TABLE ———
+  function renderHistoryTable(records) {
+    const tbody = document.getElementById('history-tbody');
+    if (records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No punch records yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = records.map(r => {
+      const ci = r.clockIn ? fmtDateTime(r.clockIn.toDate()) : '—';
+      const co = r.clockOut ? fmtDateTime(r.clockOut.toDate()) : '—';
+      const total = r.totalMinutes != null
+        ? `${Math.floor(r.totalMinutes/60)}h ${r.totalMinutes%60}m` : '—';
+      const status = r.clockOut
+        ? `<span class="tag complete">Complete</span>`
+        : `<span class="tag in">● Active</span>`;
+      const editNote = r.adminEditReason
+        ? `<div style="font-size:0.62rem;color:var(--muted);margin-top:3px">✎ Admin edit: ${r.adminEditReason}</div>`
+        : '';
+      return `<tr>
+        <td>${fmtDate(r.clockIn.toDate())}</td>
+        <td>${ci}</td>
+        <td>${co}</td>
+        <td>${total}${editNote}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ——— COMPUTE STATS ———
+  function computeStats(records) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0,0,0,0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let weekMins = 0, monthMins = 0, days = new Set();
+    records.forEach(r => {
+      if (!r.totalMinutes) return;
+      const d = r.clockIn.toDate();
+      if (d >= startOfWeek) weekMins += r.totalMinutes;
+      if (d >= startOfMonth) monthMins += r.totalMinutes;
+      days.add(r.date);
+    });
+
+    document.getElementById('stat-week').innerHTML =
+      `${Math.floor(weekMins/60)}<span class="stat-unit">h ${weekMins%60}m</span>`;
+    document.getElementById('stat-month').innerHTML =
+      `${Math.floor(monthMins/60)}<span class="stat-unit">h ${monthMins%60}m</span>`;
+    document.getElementById('stat-days').innerHTML =
+      `${days.size}<span class="stat-unit">days</span>`;
+  }
+
+  // ——— MONTHLY SUMMARY ———
+  async function loadMonthlySummary() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const startStr = startOfMonth.toISOString().split('T')[0];
+    const endStr = endOfMonth.toISOString().split('T')[0];
+
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('monthly-label').textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    try {
+      const q = query(
+        collection(db, 'punches'),
+        where('date', '>=', startStr),
+        where('date', '<=', endStr)
+      );
+      const snap = await getDocs(q);
+      const records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderMonthlySummary(records);
+    } catch (e) {
+      document.getElementById('monthly-tbody').innerHTML =
+        '<tr><td colspan="5" class="empty-state">Error loading monthly data.</td></tr>';
+      console.error(e);
+    }
+  }
+
+  function renderMonthlySummary(records) {
+    const byUser = {};
+    records.forEach(r => {
+      if (!byUser[r.userId]) {
+        byUser[r.userId] = {
+          name: r.userName || r.userEmail,
+          email: r.userEmail,
+          totalMins: 0,
+          days: new Set(),
+          hasActive: false
+        };
+      }
+      byUser[r.userId].totalMins += r.totalMinutes || 0;
+      if (r.date) byUser[r.userId].days.add(r.date);
+      if (!r.clockOut) byUser[r.userId].hasActive = true;
+    });
+
+    const colors = ['#2a6b3f','#c8390a','#5b4fcf','#b45309','#0369a1','#7c3aed'];
+    const rows = Object.entries(byUser).map(([uid, data]) => {
+      const hrs = Math.floor(data.totalMins / 60);
+      const mins = data.totalMins % 60;
+      const days = data.days.size;
+      const avgMins = days > 0 ? Math.floor(data.totalMins / days) : 0;
+      const avgHrs = Math.floor(avgMins / 60);
+      const avgM = avgMins % 60;
+      const initials = data.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      const color = colors[Math.abs((uid.charCodeAt(0)||0) + (uid.charCodeAt(1)||0)) % colors.length];
+      const statusTag = data.hasActive
+        ? `<span class="tag in">● Active</span>`
+        : `<span class="tag complete">Complete</span>`;
+      return `<tr>
+        <td>
+          <div class="employee-row">
+            <div class="emp-avatar" style="background:${color}">${initials}</div>
+            <div><div class="emp-name">${data.name}</div><div class="emp-role">${data.email}</div></div>
+          </div>
+        </td>
+        <td>${days} day${days !== 1 ? 's' : ''}</td>
+        <td><strong>${hrs}h ${mins}m</strong></td>
+        <td>${avgHrs}h ${avgM}m</td>
+        <td>${statusTag}</td>
+      </tr>`;
+    });
+
+    document.getElementById('monthly-tbody').innerHTML = rows.length > 0
+      ? rows.join('')
+      : '<tr><td colspan="5" class="empty-state">No data this month yet.</td></tr>';
+  }
+
+  window.exportMonthlyCSV = async function() {
+    const rows = [['Employee','Email','Days Present','Total Hours','Avg Per Day']];
+    const tbody = document.getElementById('monthly-tbody');
+    const trs = tbody.querySelectorAll('tr');
+    trs.forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      if (tds.length >= 4) {
+        const name = tds[0].querySelector('.emp-name')?.textContent || '';
+        const email = tds[0].querySelector('.emp-role')?.textContent || '';
+        rows.push([name, email, tds[1].textContent, tds[2].textContent, tds[3].textContent]);
+      }
+    });
+    downloadCSV(rows, `monthly_summary_${new Date().toISOString().slice(0,7)}.csv`);
+  };
+
+  // ——— ADMIN DATE FILTER STATE ———
+  let adminFilterDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  window.onAdminDatePresetChange = function(val) {
+    const customInput = document.getElementById('admin-date-custom');
+    if (val === 'today') {
+      customInput.style.display = 'none';
+      adminFilterDate = new Date().toISOString().split('T')[0];
+      updateAdminDateBadge();
+      subscribeAdminDashboard();
+    } else if (val === 'yesterday') {
+      customInput.style.display = 'none';
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      adminFilterDate = d.toISOString().split('T')[0];
+      updateAdminDateBadge();
+      subscribeAdminDashboard();
+    } else if (val === 'custom') {
+      customInput.style.display = 'inline-block';
+      customInput.value = adminFilterDate;
+    }
+  };
+
+  window.onAdminCustomDateChange = function(val) {
+    if (!val) return;
+    adminFilterDate = val;
+    updateAdminDateBadge();
+    subscribeAdminDashboard();
+  };
+
+  window.goToAdminToday = function() {
+    adminFilterDate = new Date().toISOString().split('T')[0];
+    document.getElementById('admin-date-preset').value = 'today';
+    document.getElementById('admin-date-custom').style.display = 'none';
+    updateAdminDateBadge();
+    subscribeAdminDashboard();
+  };
+
+  function updateAdminDateBadge() {
+    const badge = document.getElementById('admin-date-badge');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = adminFilterDate === todayStr;
+    // Format for display
+    const [y, m, d] = adminFilterDate.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dateObj = new Date(adminFilterDate + 'T00:00:00');
+    const label = isToday
+      ? 'Today'
+      : `${days[dateObj.getDay()]}, ${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+    badge.textContent = label;
+    badge.className = 'date-filter-badge' + (isToday ? ' today' : '');
+    // Update the section subtitle
+    document.getElementById('admin-sub').textContent = isToday
+      ? `Live workforce status · ${months[parseInt(m)-1]} ${y}`
+      : `Viewing ${label} · ${months[parseInt(m)-1]} ${y}`;
+  }
+
+  // ——— ADMIN DASHBOARD ———
+  function subscribeAdminDashboard() {
+    if (unsubscribeAdmin) { unsubscribeAdmin(); unsubscribeAdmin = null; }
+    const q = query(
+      collection(db, 'punches'),
+      where('date', '==', adminFilterDate)
+    );
+    unsubscribeAdmin = onSnapshot(q, (snap) => {
+      const records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderAdminDashboard(records);
+    });
+  }
+
+  function renderAdminDashboard(records) {
+    // Group by user
+    const byUser = {};
+    records.forEach(r => {
+      if (!byUser[r.userId]) byUser[r.userId] = [];
+      byUser[r.userId].push(r);
+    });
+
+    let inCount = 0, outCount = 0, totalMins = 0;
+    const rows = [];
+
+    Object.entries(byUser).forEach(([uid, recs]) => {
+      const latest = recs.sort((a,b) => b.clockIn - a.clockIn)[0];
+      const isIn = !latest.clockOut;
+      if (isIn) inCount++; else outCount++;
+      const mins = recs.reduce((s, r) => s + (r.totalMinutes || 0), 0);
+      totalMins += mins;
+      const hoursToday = mins > 0 ? `${Math.floor(mins/60)}h ${mins%60}m` : isIn ? 'Active' : '—';
+      const name = latest.userName || latest.userEmail;
+      const initials = name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      const colors = ['#2a6b3f','#c8390a','#5b4fcf','#b45309','#0369a1','#7c3aed'];
+      const color = colors[Math.abs(uid.charCodeAt(0) + uid.charCodeAt(1)) % colors.length];
+      const ci = latest.clockIn ? fmtTime(latest.clockIn.toDate()) : '—';
+      const co = latest.clockOut ? fmtTime(latest.clockOut.toDate()) : '—';
+      const statusTag = isIn
+        ? `<span class="tag in">● In</span>`
+        : `<span class="tag out">● Out</span>`;
+      // Build time strings for the edit modal (HH:MM format)
+      const ciVal = latest.clockIn ? toTimeInputVal(latest.clockIn.toDate()) : '';
+      const coVal = latest.clockOut ? toTimeInputVal(latest.clockOut.toDate()) : '';
+      const safeName = name.replace(/'/g, "\\'");
+      rows.push(`<tr>
+        <td>
+          <div class="employee-row">
+            <div class="emp-avatar" style="background:${color}">${initials}</div>
+            <div><div class="emp-name">${name}</div><div class="emp-role">${latest.userEmail}</div></div>
+          </div>
+        </td>
+        <td>${ci}</td><td>${co}</td><td>${hoursToday}</td><td>${statusTag}</td>
+        <td><button class="edit-btn" onclick="openPunchEditModal('${latest.id}','${safeName}','${latest.date||''}','${ciVal}','${coVal}')">✎ Edit</button></td>
+      </tr>`);
+    });
+
+    document.getElementById('admin-in-count').textContent = inCount;
+    document.getElementById('admin-out-count').textContent = outCount;
+    document.getElementById('admin-total-count').textContent = inCount + outCount;
+    document.getElementById('admin-hours-today').textContent = Math.floor(totalMins/60);
+
+    // Update stat label dynamically
+    const todayStr = new Date().toISOString().split('T')[0];
+    const statLabel = document.querySelector('#admin-hours-today').closest('.admin-stat')?.querySelector('.admin-stat-label');
+    if (statLabel) statLabel.textContent = adminFilterDate === todayStr ? 'Hours Logged Today' : 'Hours Logged';
+
+    const tbody = document.getElementById('admin-tbody');
+    tbody.innerHTML = rows.length > 0
+      ? rows.join('')
+      : `<tr><td colspan="6" class="empty-state">No activity recorded for this date.</td></tr>`;
+  }
+
+  // ——— SLACK NOTIFICATION ———
+  async function notifySlack(type, name, time, totalHours) {
+    // ============================================================
+    // 🔧 PASTE YOUR SLACK WEBHOOK URL HERE
+    // ============================================================
+    const SLACK_WEBHOOK = 'https://hooks.slack.com/services/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';
+    // ============================================================
+
+    if (SLACK_WEBHOOK === 'https://hooks.slack.com/services/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') return; // skip if not configured
+
+    const msg = type === 'in'
+      ? `🟢 *${name}* clocked *IN* at ${time}`
+      : `🔴 *${name}* clocked *OUT* at ${time} — Total: *${totalHours}*`;
+    try {
+      await fetch(SLACK_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msg })
+      });
+    } catch (e) {
+      console.error('Slack notification failed:', e);
+    }
+  }
+
+  // ——— CSV EXPORTS ———
+  window.exportMyCSV = function() {
+    const rows = [['Date','Clock In','Clock Out','Total Hours','Status']];
+    myRecords.forEach(r => {
+      rows.push([
+        fmtDate(r.clockIn.toDate()),
+        r.clockIn ? fmtTime(r.clockIn.toDate()) : '—',
+        r.clockOut ? fmtTime(r.clockOut.toDate()) : '—',
+        r.totalMinutes != null ? `${Math.floor(r.totalMinutes/60)}h ${r.totalMinutes%60}m` : '—',
+        r.clockOut ? 'Complete' : 'Active'
+      ]);
+    });
+    downloadCSV(rows, `my_punch_history_${new Date().toISOString().slice(0,10)}.csv`);
+  };
+
+  window.exportAllCSV = async function() {
+    showLoading(true);
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'punches'),
+        orderBy('clockIn', 'desc')
+      ));
+      const rows = [['Employee','Email','Date','Clock In','Clock Out','Total Hours','Status']];
+      snap.docs.forEach(d => {
+        const r = d.data();
+        rows.push([
+          r.userName || '—',
+          r.userEmail || '—',
+          r.date || '—',
+          r.clockIn ? fmtTime(r.clockIn.toDate()) : '—',
+          r.clockOut ? fmtTime(r.clockOut.toDate()) : '—',
+          r.totalMinutes != null ? `${Math.floor(r.totalMinutes/60)}h ${r.totalMinutes%60}m` : '—',
+          r.clockOut ? 'Complete' : 'Active'
+        ]);
+      });
+      downloadCSV(rows, `all_employees_${new Date().toISOString().slice(0,10)}.csv`);
+    } catch (e) {
+      showToast('⚠️', 'Export failed. Please try again.');
+    }
+    showLoading(false);
+  };
+
+  function downloadCSV(rows, filename) {
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    showToast('📥', `${filename} downloaded!`);
+  }
+
+  // ——— LOGIN / LOGOUT ———
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      let msg = 'Invalid email or password.';
+      if (e.code === 'auth/user-not-found') msg = 'No account found with this email.';
+      if (e.code === 'auth/wrong-password') msg = 'Incorrect password.';
+      if (e.code === 'auth/too-many-requests') msg = 'Too many attempts. Try again later.';
+      errEl.textContent = msg;
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  };
+
+  window.doLogout = async function() {
+    clearInterval(sessionInterval);
+    if (unsubscribeAdmin) unsubscribeAdmin();
+    await signOut(auth);
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('tab-admin').classList.add('hidden');
+    document.getElementById('tab-employee').click();
+  };
+
+  // ——— NTFY PUSH NOTIFICATIONS ———
+  const NTFY_TOPIC = 'tnsolutions-punches';
+
+  function fmtTimePKT(date) {
+    return date.toLocaleTimeString('en-PK', {
+      timeZone: 'Asia/Karachi',
+      hour: '2-digit', minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  async function notifyNtfy(type, name, time, duration) {
+    try {
+      let title, tag, body;
+      if (type === 'in') {
+        title = 'Clocked In'; tag = 'white_check_mark';
+        body = `${name} clocked in at ${time}`;
+      } else if (type === 'out') {
+        title = 'Clocked Out'; tag = 'red_circle';
+        body = `${name} clocked out at ${time} (${duration} today)`;
+      } else if (type === 'break') {
+        title = 'On Break'; tag = 'coffee';
+        body = `${name} is on break (${time})`;
+      } else if (type === 'back') {
+        title = 'Back from Break'; tag = 'man_running';
+        body = `${name} is back from break (${time})`;
+      }
+
+      await fetch(`https://ntfy.sh/${NTFY_TOPIC}`, {
+        method: 'POST',
+        headers: {
+          'Title': title,
+          'Priority': 'default',
+          'Tags': tag,
+          'Content-Type': 'text/plain; charset=utf-8'
+        },
+        body: body
+      });
+    } catch (e) {
+      console.warn('ntfy notification failed:', e);
+    }
+  }
+
+  // ——— ADMIN SUB TAB SWITCHER ———
+  window.switchAdminTab = function(tab, btn) {
+    document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-sub-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('admin-tab-' + tab).classList.add('active');
+    btn.classList.add('active');
+    if (tab === 'employees') loadEmployeeProfiles();
+    if (tab === 'payroll') loadPayrollData();
+
+  };
+
+  // ——— EMPLOYEE PROFILES (Firestore: users collection) ———
+  async function loadEmployeeProfiles() {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const employees = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+        .filter(e => e.role !== 'admin');
+      renderEmployeeProfiles(employees);
+    } catch(e) {
+      document.getElementById('emp-mgmt-tbody').innerHTML =
+        '<tr><td colspan="5" class="empty-state">Error loading profiles.</td></tr>';
+    }
+  }
+
+  function renderEmployeeProfiles(employees) {
+    const tbody = document.getElementById('emp-mgmt-tbody');
+    if (!employees.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No employee profiles found.</td></tr>';
+      return;
+    }
+    const colors = ['#2a6b3f','#c8390a','#5b4fcf','#b45309','#0369a1','#7c3aed'];
+    tbody.innerHTML = employees.map(emp => {
+      const name = emp.name || emp.email;
+      const initials = name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      const color = colors[Math.abs((emp.uid.charCodeAt(0)||0)+(emp.uid.charCodeAt(1)||0)) % colors.length];
+      const startTime = emp.startTime || '—';
+      const workDays = emp.workDaysPerWeek ? emp.workDaysPerWeek + ' days/week' : '—';
+      const reqHours = emp.requiredHours ? emp.requiredHours + ' hrs/day' : '9 hrs/day';
+      const salary = emp.salary ? 'PKR ' + Number(emp.salary).toLocaleString() : '—';
+      return `<tr>
+        <td>
+          <div class="employee-row">
+            <div class="emp-avatar" style="background:${color}">${initials}</div>
+            <div><div class="emp-name">${name}</div><div class="emp-role">${emp.email || ''}</div></div>
+          </div>
+        </td>
+        <td>${startTime}</td>
+        <td>${workDays}</td>
+        <td>${salary}</td>
+        <td><button class="edit-btn" onclick="openEditModal('${emp.uid}','${name}','${emp.startTime||''}','${emp.workDaysPerWeek||6}','${emp.salary||''}','${emp.requiredHours||9}')">✏ Edit</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.openEditModal = function(uid, name, startTime, workDays, salary, requiredHours) {
+    document.getElementById('modal-uid').value = uid;
+    document.getElementById('modal-name').value = name;
+    document.getElementById('modal-starttime').value = startTime;
+    document.getElementById('modal-workdays').value = workDays;
+    document.getElementById('modal-hours').value = requiredHours || 9;
+    document.getElementById('modal-salary').value = salary;
+    document.getElementById('modal-title').textContent = 'Edit: ' + name;
+    const overlay = document.getElementById('emp-modal-overlay');
+    overlay.style.display = 'flex';
+  };
+
+  window.closeEmployeeModal = function() {
+    document.getElementById('emp-modal-overlay').style.display = 'none';
+  };
+
+  window.saveEmployeeProfile = async function() {
+    const uid = document.getElementById('modal-uid').value;
+    const name = document.getElementById('modal-name').value.trim();
+    const startTime = document.getElementById('modal-starttime').value;
+    const workDaysPerWeek = parseInt(document.getElementById('modal-workdays').value);
+    const salary = parseFloat(document.getElementById('modal-salary').value);
+    if (!uid || !startTime || !salary) {
+      showToast('⚠️', 'Please fill in all fields.');
+      return;
+    }
+    try {
+      const requiredHours = parseInt(document.getElementById('modal-hours').value);
+      await updateDoc(doc(db, 'users', uid), { name, startTime, workDaysPerWeek, salary, requiredHours });
+      showToast('✅', 'Employee profile saved!');
+      closeEmployeeModal();
+      loadEmployeeProfiles();
+    } catch(e) {
+      showToast('⚠️', 'Failed to save. Try again.');
+      console.error(e);
+    }
+  };
+
+  // ——— PAYROLL CALCULATION ———
+  async function loadPayrollData() {
+    const now = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('payroll-label').textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    const startStr = startOfMonth.toISOString().split('T')[0];
+    const endStr = endOfMonth.toISOString().split('T')[0];
+
+    try {
+      // Load all employee profiles
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const employees = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }))
+        .filter(e => e.role !== 'admin' && e.salary);
+
+      // Load all punches this month
+      const punchSnap = await getDocs(query(
+        collection(db, 'punches'),
+        where('date', '>=', startStr),
+        where('date', '<=', endStr)
+      ));
+      const punches = punchSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      renderPayroll(employees, punches, now);
+    } catch(e) {
+      document.getElementById('payroll-tbody').innerHTML =
+        '<tr><td colspan="8" class="empty-state">Error loading payroll.</td></tr>';
+      console.error(e);
+    }
+  }
+
+  function getWorkingDaysInMonth(year, month, daysPerWeek) {
+    // Count working days in month based on 6 or 7 day week
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    let count = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow = new Date(year, month, d).getDay(); // 0=Sun
+      if (daysPerWeek === 7) count++;
+      else if (daysPerWeek === 6 && dow !== 0) count++; // Mon-Sat
+    }
+    return count;
+  }
+
+  function renderPayroll(employees, punches, now) {
+    const tbody = document.getElementById('payroll-tbody');
+    if (!employees.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No employees with salary configured. Set salaries in Employee Management.</td></tr>';
+      return;
+    }
+
+    const LATE_FINE = 1000;
+
+    const rows = employees.map(emp => {
+      const empPunches = punches.filter(p => p.userId === emp.uid);
+      const presentDays = new Set(empPunches.map(p => p.date)).size;
+      const workingDaysInMonth = getWorkingDaysInMonth(now.getFullYear(), now.getMonth(), emp.workDaysPerWeek || 6);
+      const absentDays = Math.max(0, workingDaysInMonth - presentDays);
+
+      // Count late logins
+      let lateCount = 0;
+      if (emp.startTime) {
+        const [schedH, schedM] = emp.startTime.split(':').map(Number);
+        empPunches.forEach(p => {
+          if (!p.clockIn) return;
+          const ci = p.clockIn.toDate();
+          const ciMins = ci.getHours() * 60 + ci.getMinutes();
+          const schedMins = schedH * 60 + schedM + 15; // 15 min grace
+          if (ciMins > schedMins) lateCount++;
+        });
+      }
+
+      const perDayRate = emp.salary / workingDaysInMonth;
+      const absentDeduction = Math.round(perDayRate * absentDays);
+      const lateDeduction = lateCount * LATE_FINE;
+      const totalDeductions = absentDeduction + lateDeduction;
+      const netSalary = Math.max(0, emp.salary - totalDeductions);
+
+      const name = emp.name || emp.email;
+      const initials = name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      const colors = ['#2a6b3f','#c8390a','#5b4fcf','#b45309','#0369a1','#7c3aed'];
+      const color = colors[Math.abs((emp.uid.charCodeAt(0)||0)+(emp.uid.charCodeAt(1)||0)) % colors.length];
+
+      // Encode data for invoice
+      const invoiceData = encodeURIComponent(JSON.stringify({
+        name, email: emp.email, month: document.getElementById('payroll-label').textContent,
+        salary: emp.salary, presentDays, absentDays, workingDaysInMonth, requiredHours: emp.requiredHours || 9,
+        lateCount, absentDeduction, lateDeduction, totalDeductions, netSalary,
+        perDayRate: Math.round(perDayRate)
+      }));
+
+      return `<tr>
+        <td>
+          <div class="employee-row">
+            <div class="emp-avatar" style="background:${color}">${initials}</div>
+            <div><div class="emp-name">${name}</div><div class="emp-role">${emp.email||''}</div></div>
+          </div>
+        </td>
+        <td>${presentDays} / ${workingDaysInMonth}</td>
+        <td style="color:var(--accent)">${absentDays}</td>
+        <td style="color:var(--accent)">${lateCount}</td>
+        <td>PKR ${Number(emp.salary).toLocaleString()}</td>
+        <td style="color:var(--accent)">− PKR ${Number(totalDeductions).toLocaleString()}
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:2px">
+            Absent: PKR ${Number(absentDeduction).toLocaleString()} · Late: PKR ${Number(lateDeduction).toLocaleString()}
+          </div>
+        </td>
+        <td style="color:var(--accent2);font-weight:600">PKR ${Number(netSalary).toLocaleString()}</td>
+        <td><button class="invoice-btn" onclick="downloadInvoice('${invoiceData}')">↓ PDF</button></td>
+      </tr>`;
+    });
+
+    tbody.innerHTML = rows.join('');
+  }
+
+  // ——— PDF INVOICE GENERATOR ———
+  window.downloadInvoice = function(encodedData) {
+    const d = JSON.parse(decodeURIComponent(encodedData));
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: Arial, sans-serif; padding: 48px; color: #0d0d0d; max-width: 700px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #0d0d0d; }
+  .company { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; }
+  .company span { color: #c8390a; }
+  .invoice-meta { text-align: right; font-size: 0.8rem; color: #7a7060; }
+  .invoice-meta strong { font-size: 1.1rem; color: #0d0d0d; display: block; margin-bottom: 4px; }
+  .employee-section { background: #f5f0e8; border-radius: 10px; padding: 20px 24px; margin-bottom: 28px; }
+  .employee-section h2 { font-size: 1.1rem; margin: 0 0 4px; }
+  .employee-section p { font-size: 0.8rem; color: #7a7060; margin: 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7a7060; padding: 8px 12px; border-bottom: 1.5px solid #d4cbba; background: #ede7d5; }
+  td { padding: 12px; font-size: 0.85rem; border-bottom: 1px solid #ede7d5; }
+  tr:last-child td { border-bottom: none; }
+  .deduction { color: #c8390a; }
+  .total-row td { font-weight: 700; font-size: 1rem; border-top: 2px solid #0d0d0d; padding-top: 16px; }
+  .net-salary { color: #2a6b3f; font-size: 1.3rem; }
+  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #d4cbba; font-size: 0.7rem; color: #7a7060; text-align: center; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="company">TN<span>Solutions</span></div>
+    <div style="font-size:0.75rem;color:#7a7060;margin-top:4px">Salary Invoice</div>
+  </div>
+  <div class="invoice-meta">
+    <strong>INVOICE</strong>
+    Month: ${d.month}<br>
+    Generated: ${new Date().toLocaleDateString('en-PK', {day:'numeric',month:'long',year:'numeric'})}
+  </div>
+</div>
+<div class="employee-section">
+  <h2>${d.name}</h2>
+  <p>${d.email}</p>
+</div>
+<table>
+  <thead><tr><th>Description</th><th>Details</th><th>Amount (PKR)</th></tr></thead>
+  <tbody>
+    <tr><td>Gross Monthly Salary</td><td>${d.month}</td><td>${Number(d.salary).toLocaleString()}</td></tr>
+    <tr><td>Working Days in Month</td><td>${d.workingDaysInMonth} days</td><td>—</td></tr>
+    <tr><td>Required Hours / Day</td><td>${d.requiredHours} hrs</td><td>—</td></tr>
+    <tr><td>Days Present</td><td>${d.presentDays} days</td><td>—</td></tr>
+    <tr><td>Per Day Rate</td><td>PKR ${Number(d.perDayRate).toLocaleString()} / day</td><td>—</td></tr>
+    <tr class="deduction"><td>Absent Deduction</td><td>${d.absentDays} day(s) × PKR ${Number(d.perDayRate).toLocaleString()}</td><td>− ${Number(d.absentDeduction).toLocaleString()}</td></tr>
+    <tr class="deduction"><td>Late Login Fine</td><td>${d.lateCount} late login(s) × PKR 1,000</td><td>− ${Number(d.lateDeduction).toLocaleString()}</td></tr>
+    <tr class="deduction"><td>Total Deductions</td><td></td><td>− ${Number(d.totalDeductions).toLocaleString()}</td></tr>
+    <tr class="total-row"><td colspan="2">Net Salary Payable</td><td class="net-salary">PKR ${Number(d.netSalary).toLocaleString()}</td></tr>
+  </tbody>
+</table>
+<div class="footer">TN Solutions &mdash; This is a computer-generated invoice.</div>
+  <div id="ios-install-banner" style="display:none;position:fixed;bottom:20px;left:16px;right:16px;background:var(--ink);color:var(--paper);padding:16px 18px;border-radius:12px;z-index:500;font-size:0.75rem;line-height:1.5;">
+    <div style="font-weight:600;margin-bottom:4px">📲 Enable Notifications</div>
+    <div style="color:rgba(255,255,255,0.7)">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>, then reopen the app to receive clock-in/out notifications.</div>
+    <button onclick="document.getElementById('ios-install-banner').style.display='none'" style="margin-top:10px;background:var(--paper);color:var(--ink);border:none;padding:6px 14px;border-radius:6px;font-family:'DM Mono',monospace;font-size:0.7rem;cursor:pointer;">Got it</button>
+  </div>
+
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.onload = () => {
+        setTimeout(() => { win.print(); }, 500);
+      };
+    }
+    showToast('📄', `Invoice for ${d.name} opened!`);
+  };
+
+  // ——— PUNCH EDIT MODAL ———
+  function toTimeInputVal(date) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  window.openPunchEditModal = function(docId, employeeName, date, ciVal, coVal) {
+    document.getElementById('punch-edit-doc-id').value = docId;
+    document.getElementById('punch-edit-employee-label').textContent = employeeName;
+    document.getElementById('punch-edit-date').value = date;
+    document.getElementById('punch-edit-clockin').value = ciVal;
+    document.getElementById('punch-edit-clockout').value = coVal;
+    document.getElementById('punch-edit-reason').value = '';
+    document.getElementById('punch-edit-overlay').classList.add('open');
+  };
+
+  window.closePunchEditModal = function() {
+    document.getElementById('punch-edit-overlay').classList.remove('open');
+  };
+
+  // Close modal on backdrop click
+  document.getElementById('punch-edit-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closePunchEditModal();
+  });
+
+  window.savePunchEdit = async function() {
+    const docId = document.getElementById('punch-edit-doc-id').value;
+    const date = document.getElementById('punch-edit-date').value; // YYYY-MM-DD
+    const ciRaw = document.getElementById('punch-edit-clockin').value;   // HH:MM
+    const coRaw = document.getElementById('punch-edit-clockout').value;  // HH:MM or ''
+    const reason = document.getElementById('punch-edit-reason').value.trim();
+
+    if (!ciRaw) { showToast('⚠️', 'Clock In time is required.'); return; }
+    if (!reason) { showToast('⚠️', 'Please enter a reason for the edit.'); return; }
+
+    // Parse times using the punch's date as base
+    const [ciH, ciM] = ciRaw.split(':').map(Number);
+    let ciDate;
+    if (date) {
+      ciDate = new Date(date + 'T00:00:00');
+      ciDate.setHours(ciH, ciM, 0, 0);
+    } else {
+      ciDate = new Date();
+      ciDate.setHours(ciH, ciM, 0, 0);
+    }
+
+    let coDate = null;
+    let totalMinutes = null;
+    if (coRaw) {
+      const [coH, coM] = coRaw.split(':').map(Number);
+      coDate = new Date(ciDate);
+      coDate.setHours(coH, coM, 0, 0);
+      // Handle midnight crossover
+      if (coDate < ciDate) coDate.setDate(coDate.getDate() + 1);
+      totalMinutes = Math.floor((coDate - ciDate) / 60000);
+    }
+
+    showLoading(true);
+    try {
+      const updatePayload = {
+        clockIn: Timestamp.fromDate(ciDate),
+        clockOut: coDate ? Timestamp.fromDate(coDate) : null,
+        totalMinutes: totalMinutes,
+        adminEditReason: reason,
+        adminEditBy: currentUser.email,
+        adminEditAt: Timestamp.now()
+      };
+      await updateDoc(doc(db, 'punches', docId), updatePayload);
+      closePunchEditModal();
+      showToast('✅', `Punch record updated — changes live instantly.`);
+      // Admin table refreshes via onSnapshot automatically
+    } catch (e) {
+      console.error('Punch edit failed:', e);
+      showToast('⚠️', 'Update failed. Please try again.');
+    }
+    showLoading(false);
+  };
+
+  // ——— VIEW SWITCHER ———
+  window.switchView = function(view, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    btn.classList.add('active');
+    if (view === 'admin') { updateAdminDateBadge(); subscribeAdminDashboard(); loadMonthlySummary(); }
+  };
+
+  // ——— HELPERS ———
+  function fmtTime(d) {
+    let h = d.getHours(), m = d.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+  function fmtDate(d) {
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  function fmtDateTime(d) { return fmtTime(d); }
+
+  function showToast(icon, msg) {
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-msg').textContent = msg;
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+  function showLoading(show) {
+    document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+  }
+
+  // Allow Enter key on login
+  document.getElementById('login-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.doLogin();
+  });
+
+  // Show iOS install banner if on Safari and not installed as PWA
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandaloneMode = window.navigator.standalone === true;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isIOS && isSafari && !isInStandaloneMode) {
+    setTimeout(() => {
+      const banner = document.getElementById('ios-install-banner');
+      if (banner) banner.style.display = 'block';
+    }, 3000);
+  }
+</script>
+
+</body>
+</html>
