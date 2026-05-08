@@ -1235,7 +1235,7 @@
   // Set your office coordinates and allowed radius below.
   // To find coordinates: right-click your office on Google Maps → copy lat/lng.
   const OFFICE_LAT = 24.832635849379404;   // ← replace with your office latitude
-  const OFFICE_LNG = 67.07101943541713;   // ← replace with your office longitude
+  const OFFICE_LNG = 67.07101943541713;    // ← replace with your office longitude
   const OFFICE_RADIUS_M = 200;  // ← allowed radius in metres (200 = ~2 min walk)
 
   function getDistanceMeters(lat1, lon1, lat2, lon2) {
@@ -1315,10 +1315,8 @@
     showLoading(true);
 
     // Geolocation check — skipped for exempt employees
-    const empSnap = await getDoc(doc(db, 'employees', currentUser.uid));
-    const empData = empSnap.data();
-
-    if (empData?.exemptFromLocation) {
+    // exemptFromLocation field is read from the 'users' collection (same doc used for login)
+    if (currentUserData?.exemptFromLocation) {
       // Exempt employee — no location check needed
       const banner = document.getElementById('ip-warning-banner');
       if (banner) banner.remove();
