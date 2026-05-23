@@ -209,7 +209,7 @@
   /* STATS */
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 36px;
   }
@@ -744,6 +744,11 @@
       <div class="stat-card">
         <div class="stat-label">Days Logged</div>
         <div class="stat-val" id="stat-days">—<span class="stat-unit">days</span></div>
+      </div>
+      <div class="stat-card" style="border-color: rgba(200,57,10,0.35);">
+        <div class="stat-label">Late This Month</div>
+        <div class="stat-val" id="stat-late" style="color:var(--accent)">—<span class="stat-unit">times</span></div>
+        <div style="font-size:0.62rem;color:var(--muted);margin-top:6px" id="stat-late-sub"></div>
       </div>
     </div>
 
@@ -1457,12 +1462,27 @@
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     let weekMins = 0, monthMins = 0, days = new Set();
+    let lateCount = 0;
+    const startTime = currentUserData?.startTime; // e.g. "09:00"
+    let schedH = null, schedM = null;
+    if (startTime) {
+      [schedH, schedM] = startTime.split(':').map(Number);
+    }
+
     records.forEach(r => {
-      if (!r.totalMinutes) return;
       const d = r.clockIn.toDate();
-      if (d >= startOfWeek) weekMins += r.totalMinutes;
-      if (d >= startOfMonth) monthMins += r.totalMinutes;
-      days.add(r.date);
+      // Hours/days stats
+      if (r.totalMinutes) {
+        if (d >= startOfWeek) weekMins += r.totalMinutes;
+        if (d >= startOfMonth) monthMins += r.totalMinutes;
+      }
+      if (r.date) days.add(r.date);
+      // Late count — this month only, using 15-min grace period
+      if (d >= startOfMonth && schedH !== null && r.clockIn) {
+        const ciMins = d.getHours() * 60 + d.getMinutes();
+        const schedMins = schedH * 60 + schedM + 15;
+        if (ciMins > schedMins) lateCount++;
+      }
     });
 
     document.getElementById('stat-week').innerHTML =
@@ -1471,6 +1491,19 @@
       `${Math.floor(monthMins/60)}<span class="stat-unit">h ${monthMins%60}m</span>`;
     document.getElementById('stat-days').innerHTML =
       `${days.size}<span class="stat-unit">days</span>`;
+
+    const lateEl = document.getElementById('stat-late');
+    const lateSubEl = document.getElementById('stat-late-sub');
+    lateEl.innerHTML = `${lateCount}<span class="stat-unit">times</span>`;
+    if (!startTime) {
+      lateSubEl.textContent = 'No schedule set';
+    } else if (lateCount === 0) {
+      lateEl.style.color = 'var(--accent2)';
+      lateSubEl.textContent = '✓ On time every day';
+    } else {
+      lateEl.style.color = 'var(--accent)';
+      lateSubEl.textContent = `PKR ${(lateCount * 1000).toLocaleString()} fine`;
+    }
   }
 
   // ——— MONTHLY SUMMARY ———
