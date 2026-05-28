@@ -645,6 +645,93 @@
   }
   .date-filter-badge.today { color: var(--accent2); border-color: var(--accent2); background: rgba(42,107,63,0.06); }
 
+  /* WHO'S IN PANEL */
+  .whos-in-section {
+    margin-bottom: 36px;
+  }
+  .whos-in-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .whos-in-count-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px;
+    border-radius: 100px;
+    background: rgba(42,107,63,0.1);
+    border: 1.5px solid rgba(42,107,63,0.3);
+    color: var(--accent2);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .whos-in-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+  .whos-in-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+  }
+  .whos-in-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 6px var(--shadow);
+    transition: border-color 0.2s;
+  }
+  .whos-in-card.is-you {
+    border-color: rgba(42,107,63,0.5);
+    background: rgba(42,107,63,0.03);
+  }
+  .whos-in-card .emp-avatar {
+    width: 36px; height: 36px;
+    font-size: 0.85rem;
+  }
+  .whos-in-name {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .whos-in-since {
+    font-size: 0.64rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .whos-in-you-tag {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent2);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .whos-in-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    background: var(--card);
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+  }
+
   @media (max-width: 700px) {
     main { padding: 24px 18px; }
     .clock-section { grid-template-columns: 1fr; }
@@ -653,6 +740,7 @@
     header { padding: 14px 18px; }
     .live-clock { font-size: 2.4rem; }
     .login-card { width: 90%; padding: 32px 24px; }
+    .whos-in-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -749,6 +837,20 @@
         <div class="stat-label">Late This Month</div>
         <div class="stat-val" id="stat-late" style="color:var(--accent)">—<span class="stat-unit">times</span></div>
         <div style="font-size:0.62rem;color:var(--muted);margin-top:6px" id="stat-late-sub"></div>
+      </div>
+    </div>
+
+    <!-- WHO'S IN PANEL -->
+    <div class="whos-in-section">
+      <div class="whos-in-header">
+        <div class="section-title">Who's In</div>
+        <div class="whos-in-count-pill">
+          <span class="whos-in-dot"></span>
+          <span id="whos-in-count">0</span> clocked in
+        </div>
+      </div>
+      <div class="whos-in-grid" id="whos-in-grid">
+        <div class="whos-in-empty">Loading...</div>
       </div>
     </div>
 
@@ -1096,6 +1198,7 @@
       currentUserData = null;
       document.getElementById('login-screen').style.display = 'flex';
       if (unsubscribeAdmin) unsubscribeAdmin();
+      if (unsubscribeWhosIn) unsubscribeWhosIn();
     }
   });
 
@@ -1130,6 +1233,7 @@
   // ——— INIT APP ———
   function initApp() {
     loadMyRecords(); // single source of truth — handles session restore + history
+    subscribeWhosIn(); // live "who's in" panel for all employees
     if (currentUserData.role === 'admin') {
       subscribeAdminDashboard();
     }
@@ -1199,6 +1303,61 @@
     } catch (e) {
       console.error('Error loading records:', e);
     }
+  }
+
+  // ——— WHO'S IN (real-time) ———
+  let unsubscribeWhosIn = null;
+  const AVATAR_COLORS = ['#2a6b3f','#c8390a','#5b4fcf','#b45309','#0369a1','#7c3aed'];
+
+  function subscribeWhosIn() {
+    if (unsubscribeWhosIn) unsubscribeWhosIn();
+    // Query all open punch records (no clockOut)
+    const q = query(
+      collection(db, 'punches'),
+      where('clockOut', '==', null)
+    );
+    unsubscribeWhosIn = onSnapshot(q, (snap) => {
+      const active = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderWhosIn(active);
+    }, (e) => {
+      console.warn('Who\'s In snapshot error:', e);
+    });
+  }
+
+  function renderWhosIn(active) {
+    const grid = document.getElementById('whos-in-grid');
+    const countEl = document.getElementById('whos-in-count');
+    countEl.textContent = active.length;
+
+    if (active.length === 0) {
+      grid.innerHTML = '<div class="whos-in-empty">Nobody is clocked in right now.</div>';
+      return;
+    }
+
+    // Sort: current user first, then alphabetically
+    active.sort((a, b) => {
+      const aIsMe = a.userId === currentUser?.uid ? -1 : 1;
+      const bIsMe = b.userId === currentUser?.uid ? -1 : 1;
+      if (aIsMe !== bIsMe) return aIsMe - bIsMe;
+      return (a.userName || '').localeCompare(b.userName || '');
+    });
+
+    grid.innerHTML = active.map(r => {
+      const name = r.userName || r.userEmail || 'Unknown';
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      const uid = r.userId || '';
+      const color = AVATAR_COLORS[Math.abs((uid.charCodeAt(0)||0) + (uid.charCodeAt(1)||0)) % AVATAR_COLORS.length];
+      const isMe = r.userId === currentUser?.uid;
+      const since = r.clockIn ? `Since ${fmtTime(r.clockIn.toDate())}` : '';
+      return `<div class="whos-in-card${isMe ? ' is-you' : ''}">
+        <div class="emp-avatar" style="background:${color}">${initials}</div>
+        <div style="min-width:0">
+          <div class="whos-in-name">${name.split(' ')[0]} ${name.split(' ')[1] || ''}</div>
+          <div class="whos-in-since">${since}</div>
+          ${isMe ? '<div class="whos-in-you-tag">● You</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
   }
 
   // ——— SET CLOCK STATE ———
