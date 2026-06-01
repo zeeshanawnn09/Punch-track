@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" 
+  content="default-src 'self'; 
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' 
+      https://*.googleapis.com 
+      https://*.gstatic.com 
+      https://www.gstatic.com; 
+    connect-src 'self' 
+      https://*.googleapis.com 
+      https://*.firebaseio.com 
+      wss://*.firebaseio.com; 
+    frame-src 'self' https://*.firebaseapp.com;">
 <title>PunchTrack — Employee Time System</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&display=swap" rel="stylesheet">
 <style>
